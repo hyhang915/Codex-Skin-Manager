@@ -5,7 +5,6 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$PortExplicit = $PSBoundParameters.ContainsKey('Port')
 $SkillRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'common-windows.ps1')
 . (Join-Path $PSScriptRoot 'theme-skill.ps1')
@@ -87,27 +86,19 @@ try {
     $desktop = [Environment]::GetFolderPath('Desktop')
     $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
     $wscript = Join-Path $env:SystemRoot 'System32\wscript.exe'
-    $startLauncher = Join-Path $PSScriptRoot 'launch-dream-skin.vbs'
     $managerLauncher = Join-Path $PSScriptRoot 'launch-theme-manager.vbs'
-    $restoreLauncher = Join-Path $PSScriptRoot 'launch-restore.vbs'
     $iconPath = Join-Path $SkillRoot 'assets\DreamSkinAppIcon.ico'
-    $portArgument = if ($PortExplicit) { " -Port $Port" } else { '' }
-    @(
-      (Join-Path $desktop 'Codex Dream Skin.lnk'),
-      (Join-Path $desktop 'Codex Dream Skin Themes.lnk'),
-      (Join-Path $desktop 'Codex Dream Skin - Restore.lnk'),
-      (Join-Path $startMenu 'Codex Dream Skin.lnk'),
-      (Join-Path $startMenu 'Codex Dream Skin Themes.lnk')
-    ) | ForEach-Object { Remove-Item -LiteralPath $_ -Force -ErrorAction SilentlyContinue }
-
+    $legacyShortcutNames = @(
+      'Codex 皮肤启动器.lnk',
+      'Codex 皮肤管理器 - 恢复原版.lnk',
+      'Codex Dream Skin.lnk',
+      'Codex Dream Skin Themes.lnk',
+      'Codex Dream Skin - Restore.lnk'
+    )
     foreach ($folder in @($desktop, $startMenu)) {
-      $shortcut = $shell.CreateShortcut((Join-Path $folder 'Codex 皮肤启动器.lnk'))
-      $shortcut.TargetPath = $wscript
-      $shortcut.Arguments = "`"$startLauncher`"$portArgument"
-      $shortcut.WorkingDirectory = $SkillRoot
-      $shortcut.Description = '使用当前皮肤启动 Codex'
-      if (Test-Path -LiteralPath $iconPath) { $shortcut.IconLocation = "$iconPath,0" }
-      $shortcut.Save()
+      foreach ($name in $legacyShortcutNames) {
+        Remove-Item -LiteralPath (Join-Path $folder $name) -Force -ErrorAction SilentlyContinue
+      }
     }
 
     foreach ($folder in @($desktop, $startMenu)) {
@@ -115,18 +106,10 @@ try {
       $manager.TargetPath = $wscript
       $manager.Arguments = "`"$managerLauncher`""
       $manager.WorkingDirectory = $SkillRoot
-      $manager.Description = '预览并切换 Codex 皮肤'
+      $manager.Description = '打开 Codex 皮肤管理器；启动 Codex、切换主题和恢复原版均已集成'
       if (Test-Path -LiteralPath $iconPath) { $manager.IconLocation = "$iconPath,0" }
       $manager.Save()
     }
-
-    $restore = $shell.CreateShortcut((Join-Path $desktop 'Codex 皮肤管理器 - 恢复原版.lnk'))
-    $restore.TargetPath = $wscript
-    $restore.Arguments = "`"$restoreLauncher`"$portArgument"
-    $restore.WorkingDirectory = $SkillRoot
-    $restore.Description = 'Restore the official Codex appearance and close the CDP session'
-    if (Test-Path -LiteralPath $iconPath) { $restore.IconLocation = "$iconPath,0" }
-    $restore.Save()
   }
 
   if ($NoShortcuts) {

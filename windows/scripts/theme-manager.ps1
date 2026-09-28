@@ -1262,7 +1262,35 @@ function Get-ThemeLibraryFingerprint {
   return $parts -join '|'
 }
 
+function Ensure-BuiltInThemes {
+  $sourceRoot = Join-Path $EngineRoot 'themes'
+  if (-not (Test-Path -LiteralPath $sourceRoot)) { return }
+  New-Item -ItemType Directory -Force -Path $ThemeRoot | Out-Null
+  foreach ($source in @(Get-ChildItem -LiteralPath $sourceRoot -Directory -ErrorAction SilentlyContinue)) {
+    if ($DreamSkinBuiltInThemeIds -cnotcontains $source.Name) { continue }
+    $manifestPath = Join-Path $source.FullName 'theme.json'
+    $previewPath = Join-Path $source.FullName 'preview.png'
+    $backgroundPath = Join-Path $source.FullName 'background.png'
+    if (-not (Test-Path -LiteralPath $manifestPath) -or
+        -not (Test-Path -LiteralPath $previewPath) -or
+        -not (Test-Path -LiteralPath $backgroundPath)) { continue }
+    $destination = Join-Path $ThemeRoot $source.Name
+    $destinationManifest = Join-Path $destination 'theme.json'
+    $destinationPreview = Join-Path $destination 'preview.png'
+    $destinationBackground = Join-Path $destination 'background.png'
+    if (-not (Test-Path -LiteralPath $destinationManifest) -or
+        -not (Test-Path -LiteralPath $destinationPreview) -or
+        -not (Test-Path -LiteralPath $destinationBackground)) {
+      New-Item -ItemType Directory -Force -Path $destination | Out-Null
+      Copy-Item -LiteralPath $manifestPath -Destination $destinationManifest -Force
+      Copy-Item -LiteralPath $previewPath -Destination $destinationPreview -Force
+      Copy-Item -LiteralPath $backgroundPath -Destination $destinationBackground -Force
+    }
+  }
+}
+
 function Reload-ThemeLibrary {
+  Ensure-BuiltInThemes
   New-Item -ItemType Directory -Force -Path $ThemeRoot | Out-Null
   $script:themes = @()
   foreach ($directory in @(Get-ChildItem -LiteralPath $ThemeRoot -Directory -ErrorAction SilentlyContinue)) {

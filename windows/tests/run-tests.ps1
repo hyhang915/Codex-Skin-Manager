@@ -458,8 +458,11 @@ try {
       $installScriptSource -notmatch 'selection\.json' -or
       $installScriptSource -notmatch 'install-error\.log' -or
       $installScriptSource -notmatch 'Install-DreamSkinThemeSkill' -or
+      $installScriptSource -match '\$startLauncher' -or
+      $installScriptSource -match '\$restoreLauncher' -or
+      $installScriptSource -notmatch "Codex 皮肤管理器\.lnk" -or
       $themeSkillSource -notmatch 'repositorySource') {
-    throw 'The install script is missing live-install retries, keep-running behavior, or persistent error logging.'
+    throw 'The install script is missing live-install retries, keep-running behavior, persistent error logging, or the single manager shortcut.'
   }
   $managerSource = Get-Content `
     -LiteralPath (Join-Path $Root 'scripts\theme-manager.ps1') -Raw -Encoding UTF8
@@ -480,7 +483,9 @@ try {
   $onlineThemeSource = Get-Content `
     -LiteralPath (Join-Path $Root 'scripts\sync-online-themes.ps1') -Raw -Encoding UTF8
   if ($managerSource -notmatch 'CodexDreamSkin\\themes' -or
-      $switchSource -notmatch 'CodexDreamSkin\\themes') {
+      $switchSource -notmatch 'CodexDreamSkin\\themes' -or
+      $managerSource -notmatch 'Ensure-BuiltInThemes' -or
+      $managerSource -notmatch 'Copy-Item -LiteralPath \$manifestPath') {
     throw 'The manager and switcher do not share the persistent user theme library.'
   }
   if ($managerSource -notmatch 'FlowLayoutPanel' -or
