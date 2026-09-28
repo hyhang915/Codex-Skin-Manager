@@ -1352,19 +1352,54 @@ function Get-ThemeSwitchFailureMessage {
   return $message
 }
 
+function Confirm-ManagerThemeRestart {
+  try {
+    $codex = Get-DreamSkinCodexInstall
+    $running = @(Get-DreamSkinCodexProcesses -Codex $codex).Count -gt 0
+    if (-not $running) { return 'none' }
+    $choice = [System.Windows.Forms.MessageBox]::Show(
+      '当前 Codex 是普通启动，应用主题需要重启 Codex。未保存的输入可能会丢失。现在重启并应用吗？',
+      '应用主题需要重启 Codex',
+      'YesNo',
+      'Warning'
+    )
+    return if ($choice -eq [System.Windows.Forms.DialogResult]::Yes) { 'restart' } else { 'cancel' }
+  } catch {
+    [System.Windows.Forms.MessageBox]::Show(
+      $_.Exception.Message,
+      '无法准备主题切换',
+      'OK',
+      'Error'
+    ) | Out-Null
+    return $null
+  }
+}
+
 function Start-ThemeSwitch {
   param([Parameter(Mandatory = $true)][string]$ThemeId)
   if ($null -ne $script:switchProcess) { return }
 
   try {
+    $restartExisting = $false
+    if ($script:activeThemeId -cne 'codex-default' -and $ThemeId -cne 'codex-default' -and
+        -not $script:runtimeSnapshot.Connected) {
+      $restartDecision = Confirm-ManagerThemeRestart
+      if ($null -eq $restartDecision) { return }
+      if ($restartDecision -eq 'cancel') {
+        $statusLabel.Text = '已保留当前主题'
+        return
+      }
+      $restartExisting = $restartDecision -eq 'restart'
+    }
     $escapedScript = $SwitchScript.Replace("'", "''")
     $escapedThemeId = $ThemeId.Replace("'", "''")
+    $restartArgument = if ($restartExisting) { ' -RestartExisting' } else { '' }
     $command = @"
 `$ErrorActionPreference = 'Stop'
 `$ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding(`$false)
 try {
-  & '$escapedScript' -ThemeId '$escapedThemeId'
+  & '$escapedScript' -ThemeId '$escapedThemeId'$restartArgument
   exit 0
 } catch {
   [Console]::Error.WriteLine(`$_.Exception.Message)

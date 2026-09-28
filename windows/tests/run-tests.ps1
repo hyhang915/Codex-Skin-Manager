@@ -485,7 +485,10 @@ try {
   if ($managerSource -notmatch 'CodexDreamSkin\\themes' -or
       $switchSource -notmatch 'CodexDreamSkin\\themes' -or
       $managerSource -notmatch 'Ensure-BuiltInThemes' -or
-      $managerSource -notmatch 'Copy-Item -LiteralPath \$manifestPath') {
+      $managerSource -notmatch 'Copy-Item -LiteralPath \$manifestPath' -or
+      $managerSource -notmatch 'Confirm-ManagerThemeRestart' -or
+      $managerSource -notmatch '-RestartExisting' -or
+      $switchSource -notmatch '\$RestartExisting') {
     throw 'The manager and switcher do not share the persistent user theme library.'
   }
   if ($managerSource -notmatch 'FlowLayoutPanel' -or
