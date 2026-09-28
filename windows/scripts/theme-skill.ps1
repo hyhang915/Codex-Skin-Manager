@@ -19,7 +19,12 @@ function Get-DreamSkinThemeSkillTarget {
 
 function Get-DreamSkinThemeSkillSource {
   param([Parameter(Mandatory = $true)][string]$EngineRoot)
-  return Join-Path $EngineRoot 'skill\codex-skin-theme-creator'
+  $bundledSource = Join-Path $EngineRoot 'skill\codex-skin-theme-creator'
+  if (Test-Path -LiteralPath (Join-Path $bundledSource 'SKILL.md') -PathType Leaf) {
+    return $bundledSource
+  }
+  $repositorySource = Join-Path (Split-Path -Parent $EngineRoot) 'skill\codex-skin-theme-creator'
+  return $repositorySource
 }
 
 function Test-DreamSkinThemeSkillCurrent {

@@ -449,13 +449,16 @@ try {
   }
   $installScriptSource = Get-Content `
     -LiteralPath (Join-Path $Root 'scripts\install-dream-skin.ps1') -Raw -Encoding UTF8
+  $themeSkillSource = Get-Content `
+    -LiteralPath (Join-Path $Root 'scripts\theme-skill.ps1') -Raw -Encoding UTF8
   if ($installScriptSource -match 'PromptCloseCodex' -or
       $installScriptSource -match 'Stop-DreamSkinCodex.*-AllowForce' -or
       $installScriptSource -notmatch 'Codex 保持运行' -or
       $installScriptSource -notmatch 'configInstalled' -or
       $installScriptSource -notmatch 'selection\.json' -or
       $installScriptSource -notmatch 'install-error\.log' -or
-      $installScriptSource -notmatch 'Install-DreamSkinThemeSkill') {
+      $installScriptSource -notmatch 'Install-DreamSkinThemeSkill' -or
+      $themeSkillSource -notmatch 'repositorySource') {
     throw 'The install script is missing live-install retries, keep-running behavior, or persistent error logging.'
   }
   $managerSource = Get-Content `
