@@ -52,5 +52,25 @@ assert.match(
   /main\.main-surface:not\(\.dream-skin-home-shell\)[\s\S]{0,500}var\(--dream-skin-art\) 72% center \/ cover no-repeat/,
   "Windows chat and utility routes must keep the full-cover background.",
 );
+assert.match(
+  windowsTemplate,
+  /data-app-shell-main-surface/,
+  "The renderer must recognize the current Codex main surface marker.",
+);
+assert.match(
+  windowsTemplate,
+  /data-codex-composer-root[\s\S]{0,900}composer-surface-chrome/,
+  "The renderer must bridge the current native composer to the shared skin CSS.",
+);
+assert.match(
+  windowsTemplate,
+  /data-composer-placement[\s\S]{0,240}home-composer-layout/,
+  "The renderer must identify the current home composer layout.",
+);
+assert.match(
+  windowsTemplate,
+  /removeCompatibilityClasses[\s\S]{0,500}COMPAT_MAIN_ATTR/,
+  "Renderer cleanup must remove only compatibility classes it added.",
+);
 
 console.log("PASS: Windows renderer and theme resources match the verified macOS implementation.");

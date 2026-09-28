@@ -344,6 +344,14 @@ try {
       $rendererSource -notmatch 'dream-skin-settings-shell') {
     throw 'The renderer or injector does not recognize the settings shell.'
   }
+  if ($injectorSource -notmatch 'data-app-shell-main-surface' -or
+      $injectorSource -notmatch 'data-codex-composer-root' -or
+      $rendererSource -notmatch 'data-app-shell-main-surface' -or
+      $rendererSource -notmatch 'data-codex-composer-root' -or
+      $rendererSource -notmatch 'data-composer-placement' -or
+      $rendererSource -notmatch 'removeCompatibilityClasses') {
+    throw 'The renderer or injector is missing the current Codex 26.924 shell compatibility selectors.'
+  }
   & $node.Path (Join-Path $Root 'scripts\injector.mjs') --check-payload *> $null
   if ($LASTEXITCODE -ne 0) { throw 'Injector self-test failed.' }
 

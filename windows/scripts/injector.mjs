@@ -388,8 +388,10 @@ async function getThemeRevision(themeDir) {
 
 async function probeSession(session) {
   return session.evaluate(`(() => {
-    const settingsSidebar = document.querySelector('div.app-shell-left-panel');
-    const settingsSurface = document.querySelector('div.main-surface');
+    const settingsSidebar = document.querySelector('.app-shell-left-panel');
+    const settingsSurface = [...document.querySelectorAll(
+      '.main-surface, [data-app-shell-main-surface="default"]'
+    )].find((candidate) => candidate.tagName !== 'MAIN');
     const settingsText = settingsSidebar?.textContent ?? '';
     const settings = Boolean(
       settingsSidebar &&
@@ -399,13 +401,23 @@ async function probeSession(session) {
       /(外观|Appearance)/i.test(settingsText)
     );
     const markers = {
-      shell: Boolean(document.querySelector('main.main-surface')),
-      sidebar: Boolean(document.querySelector('aside.app-shell-left-panel')),
-      composer: Boolean(document.querySelector('.composer-surface-chrome')),
-      main: Boolean(document.querySelector('[role="main"]')),
+      shell: Boolean(document.querySelector(
+        'main.main-surface, main[data-app-shell-main-surface="default"], [data-app-shell-main-surface="default"]'
+      )),
+      sidebar: Boolean(document.querySelector('aside.app-shell-left-panel, .app-shell-left-panel')),
+      composer: Boolean(document.querySelector(
+        '.composer-surface-chrome, [data-codex-composer-root], form[data-chatgpt-composer]'
+      )),
+      main: Boolean(document.querySelector(
+        '[role="main"], main[data-app-shell-main-surface="default"]'
+      )),
       library: Boolean(
-        document.querySelector('main.main-surface input') &&
-        document.querySelector('main.main-surface [role="group"]')
+        document.querySelector(
+          'main.main-surface input, main[data-app-shell-main-surface="default"] input, [data-app-shell-main-surface="default"] input'
+        ) &&
+        document.querySelector(
+          'main.main-surface [role="group"], main[data-app-shell-main-surface="default"] [role="group"], [data-app-shell-main-surface="default"] [role="group"]'
+        )
       ),
       settings,
     };
@@ -466,6 +478,14 @@ async function removeFromSession(session) {
     document.documentElement?.style.removeProperty('--dream-skin-art');
     document.querySelectorAll('.dream-skin-home').forEach((node) => node.classList.remove('dream-skin-home'));
     document.querySelectorAll('.dream-skin-home-shell').forEach((node) => node.classList.remove('dream-skin-home-shell'));
+    document.querySelectorAll('[data-dream-skin-added-main-surface]').forEach((node) => {
+      node.classList.remove('main-surface');
+      node.removeAttribute('data-dream-skin-added-main-surface');
+    });
+    document.querySelectorAll('[data-dream-skin-added-composer-surface]').forEach((node) => {
+      node.classList.remove('composer-surface-chrome');
+      node.removeAttribute('data-dream-skin-added-composer-surface');
+    });
     document.getElementById('codex-dream-skin-style')?.remove();
     document.getElementById('codex-dream-skin-chrome')?.remove();
     delete window.__CODEX_DREAM_SKIN_STATE__;
@@ -493,10 +513,10 @@ async function verifySession(session) {
       return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
     };
     const home = document.querySelector('.dream-skin-home');
-    const suggestions = home?.querySelector('.group\\\\/home-suggestions') ?? null;
+    const suggestions = home?.querySelector('.group\\/home-suggestions') ?? null;
     const cards = suggestions ? [...suggestions.querySelectorAll('button')].map(box) : [];
     const library = document.querySelector(
-      'main.main-surface.dream-skin-library-shell, .dream-skin-library-page'
+      'main.main-surface.dream-skin-library-shell, main[data-app-shell-main-surface="default"].dream-skin-library-shell, .dream-skin-library-page'
     );
     const settingsSidebar = box(document.querySelector('.dream-skin-settings-sidebar'));
     const settingsShellNode = document.querySelector('.dream-skin-settings-shell');
@@ -505,6 +525,9 @@ async function verifySession(session) {
       '[class~="rounded-2xl"][class~="border-token-border"]'
     );
     const settingsCard = box(settingsCardNode);
+    const heroNode = home?.querySelector(
+      '[data-feature="game-source"], [data-home-ambient-suggestions], [data-codex-composer-root][data-composer-placement="home"]'
+    ) || home?.firstElementChild?.firstElementChild?.firstElementChild;
     const result = {
       installed: document.documentElement.classList.contains('codex-dream-skin'),
       version: window.__CODEX_DREAM_SKIN_STATE__?.version ?? null,
@@ -514,11 +537,13 @@ async function verifySession(session) {
       chromePointerEvents: getComputedStyle(document.getElementById('codex-dream-skin-chrome') || document.body).pointerEvents,
       homePresent: Boolean(home),
       suggestionsPresent: Boolean(suggestions),
-      hero: box(home?.firstElementChild?.firstElementChild?.firstElementChild),
+      hero: box(heroNode),
       cards,
-      composer: box(document.querySelector('.composer-surface-chrome')),
+      composer: box(document.querySelector(
+        '.composer-surface-chrome, [data-codex-composer-root], form[data-chatgpt-composer]'
+      )),
       libraryPresent: Boolean(library),
-      sidebar: box(document.querySelector('aside.app-shell-left-panel')),
+      sidebar: box(document.querySelector('aside.app-shell-left-panel, .app-shell-left-panel')),
       settingsPresent: document.documentElement.dataset.dreamView === 'settings',
       settingsSidebar,
       settingsShell,

@@ -1,5 +1,9 @@
 # Windows Changelog
 
+## Unreleased
+
+- 适配新版 Windows Codex `26.924` 的 `data-app-shell-main-surface`、原生 composer 和首页布局标记；保留旧版标记兼容，并确保暂停/恢复会清理注入的兼容类。
+
 ## 1.7.2 — 2026-07-21
 
 - 新增跨平台 npm/npx 一键安装入口，先验证签名更新源、EXE 大小与 SHA-256，再启动图形安装器；支持可选 `--silent` 静默安装。

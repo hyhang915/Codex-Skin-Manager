@@ -6,6 +6,9 @@
   const SHELL_ATTR = "data-dream-shell";
   const THEME_ATTR = "data-dream-theme-style";
   const VIEW_ATTR = "data-dream-view";
+  const MAIN_SURFACE_SELECTOR = 'main.main-surface, [data-app-shell-main-surface="default"]';
+  const COMPAT_MAIN_ATTR = "data-dream-skin-added-main-surface";
+  const COMPAT_COMPOSER_ATTR = "data-dream-skin-added-composer-surface";
   const VERSION = __DREAM_SKIN_VERSION_JSON__;
   const THEME = themeConfig && typeof themeConfig === "object" ? themeConfig : {};
   const THEME_VARIABLES = [
@@ -92,8 +95,8 @@
     // Background luminance of main surfaces
     const samples = [
       body,
-      document.querySelector("main.main-surface"),
-      document.querySelector("aside.app-shell-left-panel"),
+      document.querySelector(MAIN_SURFACE_SELECTOR),
+      document.querySelector("aside.app-shell-left-panel, .app-shell-left-panel"),
     ].filter(Boolean);
     let votesLight = 0;
     let votesDark = 0;
@@ -113,6 +116,41 @@
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
     } catch {}
     return "light";
+  };
+
+  // The current Windows renderer replaced stable class names with data attributes.
+  // Add the old classes only to those nodes so the shared theme stylesheet keeps working.
+  const applyCompatibilityClasses = () => {
+    document.querySelectorAll('[data-app-shell-main-surface="default"]').forEach((node) => {
+      if (node.classList.contains("main-surface")) return;
+      node.classList.add("main-surface");
+      node.setAttribute(COMPAT_MAIN_ATTR, "true");
+    });
+    const composerRoots = [...document.querySelectorAll('[data-codex-composer-root]')];
+    const composerNodes = composerRoots.length
+      ? composerRoots
+      : [...document.querySelectorAll('form[data-chatgpt-composer]')];
+    document.querySelectorAll(`[${COMPAT_COMPOSER_ATTR}]`).forEach((node) => {
+      if (composerNodes.includes(node)) return;
+      node.classList.remove("composer-surface-chrome");
+      node.removeAttribute(COMPAT_COMPOSER_ATTR);
+    });
+    composerNodes.forEach((node) => {
+      if (node.classList.contains("composer-surface-chrome")) return;
+      node.classList.add("composer-surface-chrome");
+      node.setAttribute(COMPAT_COMPOSER_ATTR, "true");
+    });
+  };
+
+  const removeCompatibilityClasses = () => {
+    document.querySelectorAll(`[${COMPAT_MAIN_ATTR}]`).forEach((node) => {
+      node.classList.remove("main-surface");
+      node.removeAttribute(COMPAT_MAIN_ATTR);
+    });
+    document.querySelectorAll(`[${COMPAT_COMPOSER_ATTR}]`).forEach((node) => {
+      node.classList.remove("composer-surface-chrome");
+      node.removeAttribute(COMPAT_COMPOSER_ATTR);
+    });
   };
 
   const applyTheme = (root, shell) => {
@@ -194,6 +232,8 @@
       style.dataset.dreamSkinVersion = VERSION;
     }
 
+    applyCompatibilityClasses();
+
     const settingsSidebar = [...document.querySelectorAll(".app-shell-left-panel")].find((candidate) => {
       if (candidate.tagName === "ASIDE" || !candidate.querySelector("nav")) return false;
       const text = candidate.textContent || "";
@@ -202,7 +242,7 @@
         /(外观|Appearance)/i.test(text);
     }) || null;
     const settingsShell = settingsSidebar
-      ? [...document.querySelectorAll(".main-surface")].find((candidate) =>
+      ? [...document.querySelectorAll(MAIN_SURFACE_SELECTOR)].find((candidate) =>
           candidate.tagName !== "MAIN")
       : null;
     const isSettings = Boolean(settingsSidebar && settingsShell);
@@ -217,16 +257,22 @@
     if (isSettings) root.setAttribute(VIEW_ATTR, "settings");
     else root.removeAttribute(VIEW_ATTR);
 
-    const shellMain = document.querySelector("main.main-surface") ||
+    const shellMain = document.querySelector(MAIN_SURFACE_SELECTOR) ||
       settingsShell ||
       document.querySelector(".main-surface") ||
       document.querySelector("main");
     const homeIndicator = document.querySelector('[data-testid="home-icon"]');
-    const home = homeIndicator?.closest('[role="main"]') ||
+    const homeComposer = document.querySelector(
+      '[data-codex-composer-root][data-composer-placement="home"]'
+    );
+    const homeLayout = document.querySelector('.group\\/home-composer-layout');
+    const home = homeIndicator?.closest('[role="main"], main') ||
+      homeComposer?.closest('[role="main"], main') ||
+      homeLayout?.closest('[role="main"], main') ||
       [...document.querySelectorAll('[role="main"]')].find((candidate) =>
         candidate.querySelector('[data-feature="game-source"]') &&
-        candidate.querySelector('.group\\\\/home-suggestions')) || null;
-    for (const candidate of document.querySelectorAll('[role="main"].dream-skin-home')) {
+        candidate.querySelector('.group\\/home-suggestions')) || null;
+    for (const candidate of document.querySelectorAll('[role="main"].dream-skin-home, main.dream-skin-home')) {
       if (candidate !== home) candidate.classList.remove("dream-skin-home");
     }
     if (home) home.classList.add("dream-skin-home");
@@ -298,6 +344,7 @@
     document.querySelectorAll(".dream-skin-settings-sidebar").forEach((node) => node.classList.remove("dream-skin-settings-sidebar"));
     document.querySelectorAll(".dream-skin-settings-shell").forEach((node) => node.classList.remove("dream-skin-settings-shell"));
     document.querySelectorAll(".dream-skin-settings-chrome").forEach((node) => node.classList.remove("dream-skin-settings-chrome"));
+    removeCompatibilityClasses();
     document.getElementById(STYLE_ID)?.remove();
     document.getElementById(CHROME_ID)?.remove();
     const state = window[STATE_KEY];
