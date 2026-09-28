@@ -3,7 +3,8 @@ param(
   [Parameter(Mandatory = $true)]
   [ValidatePattern('^[a-z0-9-]{1,80}$')]
   [string]$ThemeId,
-  [switch]$NoApply
+  [switch]$NoApply,
+  [switch]$RestartExisting
 )
 
 $ErrorActionPreference = 'Stop'
@@ -53,7 +54,8 @@ Copy-Item -LiteralPath (Join-Path $Source 'preview.png') -Destination $ThemeDir 
 Copy-Item -LiteralPath $ManifestPath -Destination $ThemeDir -Force
 
 if (-not $NoApply) {
-  & (Join-Path $PSScriptRoot 'start-dream-skin.ps1') -PromptRestart
+  $startArguments = if ($RestartExisting) { @{ RestartExisting = $true } } else { @{ PromptRestart = $true } }
+  & (Join-Path $PSScriptRoot 'start-dream-skin.ps1') @startArguments
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 Write-Host "Selected $($Manifest.name)."
