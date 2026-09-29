@@ -505,6 +505,7 @@ try {
       $managerSource -notmatch 'runtimePanel' -or
       $managerSource -notmatch 'New-ThemeActionCard' -or
       $managerSource -notmatch 'Get-ManagerRuntimeSnapshot' -or
+      $managerSource -notmatch 'Test-ManagerThemeApplied' -or
       $managerSource -notmatch 'Get-DreamSkinVerifiedCdpIdentity' -or
       $managerSource -notmatch 'Update-ThemeSkillState' -or
       $managerSource -notmatch 'Get-ThemeLibraryFingerprint' -or

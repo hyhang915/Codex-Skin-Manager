@@ -519,6 +519,14 @@ function Get-RuntimeLabel {
   return [string]$script:runtimeSnapshot.Label
 }
 
+function Test-ManagerThemeApplied {
+  param([Parameter(Mandatory = $true)][string]$ThemeId)
+  if ($null -eq $script:runtimeSnapshot -or -not $script:runtimeSnapshot.Connected) {
+    return $false
+  }
+  return [string]$ThemeId -ceq [string]$script:activeThemeId
+}
+
 function Show-ManagerWindow {
   if ($null -eq $form -or $form.IsDisposed) { return }
   $form.ShowInTaskbar = $true
@@ -828,7 +836,7 @@ function Update-TrayState {
       $themeItem = New-Object System.Windows.Forms.ToolStripMenuItem
       $themeItem.Text = [string]$theme.Manifest.name
       $themeItem.Tag = [string]$theme.Id
-      $themeItem.Checked = [string]$theme.Id -ceq [string]$script:activeThemeId
+      $themeItem.Checked = Test-ManagerThemeApplied -ThemeId ([string]$theme.Id)
       $themeItem.Enabled = $null -eq $script:switchProcess -and -not $themeItem.Checked
       $themeItem.add_Click({
         param($sender, $eventArgs)
@@ -837,6 +845,10 @@ function Update-TrayState {
       [void]$script:trayThemesMenu.DropDownItems.Add($themeItem)
     }
     $script:trayMenuFingerprint = $menuFingerprint
+  }
+  foreach ($themeItem in @($script:trayThemesMenu.DropDownItems)) {
+    $themeItem.Checked = Test-ManagerThemeApplied -ThemeId ([string]$themeItem.Tag)
+    $themeItem.Enabled = $null -eq $script:switchProcess -and -not $themeItem.Checked
   }
 
   $script:trayThemesMenu.Enabled = $script:themes.Count -gt 0 -and $null -eq $script:switchProcess
@@ -942,7 +954,7 @@ function Update-HeaderState {
 function Set-ApplyButtonsEnabled {
   param([bool]$Enabled)
   foreach ($button in $script:applyButtons) {
-    $isActive = [string]$button.Tag -ceq [string]$script:activeThemeId
+    $isActive = Test-ManagerThemeApplied -ThemeId ([string]$button.Tag)
     $isSwitchingThis = -not $Enabled -and [string]$button.Tag -ceq [string]$script:switchThemeId
     # Disabled WinForms buttons ignore custom foreground colors.
     $button.Enabled = -not $isActive
@@ -979,7 +991,7 @@ function Set-ApplyButtonsEnabled {
 function New-ThemeCard {
   param([Parameter(Mandatory = $true)]$Theme)
 
-  $isActive = [string]$Theme.Id -ceq [string]$script:activeThemeId
+  $isActive = Test-ManagerThemeApplied -ThemeId ([string]$Theme.Id)
   $card = New-Object System.Windows.Forms.Panel
   $card.Size = New-Object System.Drawing.Size(278, 270)
   $card.Margin = New-Object System.Windows.Forms.Padding(8)
@@ -987,7 +999,7 @@ function New-ThemeCard {
   $card.Tag = $Theme.Id
   $card.add_Paint({
     param($sender, $eventArgs)
-    $active = [string]$sender.Tag -ceq [string]$script:activeThemeId
+    $active = Test-ManagerThemeApplied -ThemeId ([string]$sender.Tag)
     $penColor = if ($active) { $SignalColor } else { $LineColor }
     $penWidth = if ($active) { 2 } else { 1 }
     $pen = New-Object System.Drawing.Pen($penColor, $penWidth)
