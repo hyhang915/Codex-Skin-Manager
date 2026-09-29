@@ -1,6 +1,6 @@
 # Runtime notes
 
-- The skin discovers the current `OpenAI.Codex` package on every run, requires a non-development `Store` signature kind, and launches its `ChatGPT.exe` with an explicit `--remote-debugging-address=127.0.0.1` and selected port.
+- The skin discovers the current `OpenAI.Codex` package on every run, requires a non-development `Store` signature kind, and activates its AppUserModelId through Windows `IApplicationActivationManager`, passing an explicit `--remote-debugging-address=127.0.0.1` and selected port. Directly executing the packaged `ChatGPT.exe` is not supported by current Windows Store builds.
 - Node.js 22 or newer is required for the built-in WebSocket client. The runtime's real `process.execPath` and version are recorded in state, even when PATH points at a shim.
 - The preferred port is `9335`; the default launcher scans up to 100 ports when it is occupied. An explicit occupied port is rejected.
 - CDP is accepted only when its listener PID resolves to the exact Store `ChatGPT.exe`, every WebSocket URL is loopback and same-port, `/json/version` exposes a valid Browser ID, and the renderer has expected Codex shell markers.

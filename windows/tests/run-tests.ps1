@@ -472,6 +472,8 @@ try {
     -LiteralPath (Join-Path $Root 'scripts\pause-dream-skin.ps1') -Raw -Encoding UTF8
   $startSource = Get-Content `
     -LiteralPath (Join-Path $Root 'scripts\start-dream-skin.ps1') -Raw -Encoding UTF8
+  $restoreSource = Get-Content `
+    -LiteralPath (Join-Path $Root 'scripts\restore-dream-skin.ps1') -Raw -Encoding UTF8
   $commonSource = Get-Content `
     -LiteralPath (Join-Path $Root 'scripts\common-windows.ps1') -Raw -Encoding UTF8
   $injectorSource = Get-Content `
@@ -541,6 +543,14 @@ try {
       $startSource -notmatch 'selection\.json' -or
       $startSource -notmatch "themeId -ceq 'codex-default'") {
     throw 'The original-theme pause state or persistent theme selection workflow is incomplete.'
+  }
+  if ($commonSource -notmatch 'IApplicationActivationManager' -or
+      $commonSource -notmatch 'Start-DreamSkinCodex' -or
+      $commonSource -notmatch 'Get-DreamSkinCodexAppUserModelId' -or
+      $startSource -match 'Start-Process\s+-FilePath\s+\$codex\.Executable' -or
+      $restoreSource -match 'Start-Process\s+-FilePath\s+\$relaunchCodex\.Executable' -or
+      $restoreSource -notmatch 'Start-DreamSkinCodex') {
+    throw 'Store Codex must be launched through AppUserModelId activation; direct executable launch is unsupported.'
   }
   if ($managerSource -match 'previousThemeId' -or
       $switchSource -match 'previousSelectionBytes' -or

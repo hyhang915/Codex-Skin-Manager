@@ -64,6 +64,67 @@ function ConvertTo-DreamSkinProcessArgument {
   return '"' + $escaped + '"'
 }
 
+function Get-DreamSkinCodexAppUserModelId {
+  param([Parameter(Mandatory = $true)][object]$Codex)
+  if ($Codex.AppUserModelId) { return "$($Codex.AppUserModelId)" }
+  if (-not $Codex.PackageFamilyName) { throw 'The Codex package family name is unavailable.' }
+
+  $applicationId = 'App'
+  try {
+    $package = @(Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction Stop |
+      Where-Object { "$($_.PackageFullName)" -ceq "$($Codex.PackageFullName)" } |
+      Select-Object -First 1)
+    if ($package.Count -gt 0) {
+      $manifest = Get-AppxPackageManifest -Package $package[0] -ErrorAction Stop
+      $application = @($manifest.Package.Applications.Application |
+        Where-Object { "$($_.Executable)" -match '(?i)(^|/)ChatGPT\.exe$' -or "$($_.Id)" -ceq 'App' } |
+        Select-Object -First 1)
+      if ($application.Count -gt 0 -and $application[0].Id) {
+        $applicationId = "$($application[0].Id)"
+      }
+    }
+  } catch {
+    # The Store package family plus the default App id remains a valid fallback.
+  }
+  return "$($Codex.PackageFamilyName)!$applicationId"
+}
+
+function Start-DreamSkinCodex {
+  param(
+    [Parameter(Mandatory = $true)][object]$Codex,
+    [AllowEmptyCollection()][string[]]$Arguments = @()
+  )
+  if (-not ('DreamSkinActivation.NativeMethods' -as [type])) {
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+namespace DreamSkinActivation {
+  [ComImport, Guid("2e941141-7f97-4756-ba1d-9decde894a3d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IApplicationActivationManager {
+    int ActivateApplication(string appUserModelId, string arguments, uint options, out uint processId);
+    int ActivateForFile(string appUserModelId, IntPtr itemArray, string verb, out uint processId);
+    int ActivateForProtocol(string appUserModelId, IntPtr itemArray, out uint processId);
+  }
+  public static class NativeMethods {
+    public static int Activate(string appUserModelId, string arguments, out uint processId) {
+      var clsid = new Guid("45BA127D-10A8-46EA-8AB7-56EA9078943C");
+      var manager = (IApplicationActivationManager)Activator.CreateInstance(Type.GetTypeFromCLSID(clsid));
+      return manager.ActivateApplication(appUserModelId, arguments ?? String.Empty, 0, out processId);
+    }
+  }
+}
+'@ -ErrorAction Stop
+  }
+  $aumid = Get-DreamSkinCodexAppUserModelId -Codex $Codex
+  $argumentLine = if ($Arguments.Count -gt 0) { $Arguments -join ' ' } else { '' }
+  [uint32]$processId = 0
+  $hr = [DreamSkinActivation.NativeMethods]::Activate($aumid, $argumentLine, [ref]$processId)
+  if ($hr -lt 0) {
+    throw ('Codex Store activation failed (HRESULT 0x{0:X8}).' -f ($hr -band 0xffffffff))
+  }
+  return $processId
+}
+
 function Get-DreamSkinProcessExecutablePath {
   param([Parameter(Mandatory = $true)][object]$ProcessInfo)
   if ($ProcessInfo.ExecutablePath) { return "$($ProcessInfo.ExecutablePath)" }
