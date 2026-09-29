@@ -1363,7 +1363,8 @@ function Confirm-ManagerThemeRestart {
       'YesNo',
       'Warning'
     )
-    return if ($choice -eq [System.Windows.Forms.DialogResult]::Yes) { 'restart' } else { 'cancel' }
+    if ($choice -eq [System.Windows.Forms.DialogResult]::Yes) { return 'restart' }
+    return 'cancel'
   } catch {
     [System.Windows.Forms.MessageBox]::Show(
       $_.Exception.Message,
@@ -1392,7 +1393,8 @@ function Start-ThemeSwitch {
     }
     $escapedScript = $SwitchScript.Replace("'", "''")
     $escapedThemeId = $ThemeId.Replace("'", "''")
-    $restartArgument = if ($restartExisting) { ' -RestartExisting' } else { '' }
+    $restartArgument = ''
+    if ($restartExisting) { $restartArgument = ' -RestartExisting' }
     $command = @"
 `$ErrorActionPreference = 'Stop'
 `$ProgressPreference = 'SilentlyContinue'

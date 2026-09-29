@@ -488,7 +488,10 @@ try {
       $managerSource -notmatch 'Copy-Item -LiteralPath \$manifestPath' -or
       $managerSource -notmatch 'Confirm-ManagerThemeRestart' -or
       $managerSource -notmatch '-RestartExisting' -or
-      $switchSource -notmatch '\$RestartExisting') {
+      $managerSource -match '(?m)return\s+if\s*\(' -or
+      $managerSource -match '\$restartArgument\s*=\s*if\s*\(' -or
+      $switchSource -notmatch '\$RestartExisting' -or
+      $switchSource -match '\$startArguments\s*=\s*if\s*\(') {
     throw 'The manager and switcher do not share the persistent user theme library.'
   }
   if ($managerSource -notmatch 'FlowLayoutPanel' -or
