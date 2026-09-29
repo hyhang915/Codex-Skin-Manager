@@ -54,7 +54,11 @@ Copy-Item -LiteralPath (Join-Path $Source 'preview.png') -Destination $ThemeDir 
 Copy-Item -LiteralPath $ManifestPath -Destination $ThemeDir -Force
 
 if (-not $NoApply) {
-  $startArguments = if ($RestartExisting) { @{ RestartExisting = $true } } else { @{ PromptRestart = $true } }
+  if ($RestartExisting) {
+    $startArguments = @{ RestartExisting = $true }
+  } else {
+    $startArguments = @{ PromptRestart = $true }
+  }
   & (Join-Path $PSScriptRoot 'start-dream-skin.ps1') @startArguments
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
