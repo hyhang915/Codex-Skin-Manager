@@ -1381,8 +1381,7 @@ function Start-ThemeSwitch {
 
   try {
     $restartExisting = $false
-    if ($script:activeThemeId -cne 'codex-default' -and $ThemeId -cne 'codex-default' -and
-        -not $script:runtimeSnapshot.Connected) {
+    if ($ThemeId -cne 'codex-default' -and -not $script:runtimeSnapshot.Connected) {
       $restartDecision = Confirm-ManagerThemeRestart
       if ($null -eq $restartDecision) { return }
       if ($restartDecision -eq 'cancel') {
